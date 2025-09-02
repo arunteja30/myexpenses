@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Expense Manager{% endblock %}</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#007bff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Expense Manager">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='icons/icon-192x192.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/icon-192x192.png') }}">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body data-bs-theme="light" id="app-body">
+    <!-- Mobile Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top" id="main-navbar">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('dashboard') if current_user.is_authenticated else url_for('index') }}">
+                <i class="bi bi-wallet2"></i> ExpenseManager
+            </a>
+            
+            {% if current_user.is_authenticated %}
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('dashboard') }}">
+                            <i class="bi bi-house"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('add_expense') }}">
+                            <i class="bi bi-plus-circle"></i> Add Expense
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('expenses') }}">
+                            <i class="bi bi-list-ul"></i> Expenses
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('reports') }}">
+                            <i class="bi bi-bar-chart"></i> Reports
+                        </a>
+                    </li>
+                    {% if current_user.is_admin %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin') }}">
+                            <i class="bi bi-gear"></i> Admin
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+                
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> {{ current_user.username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ url_for('settings') }}">
+                                <i class="bi bi-gear"></i> Settings
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" onclick="toggleTheme()">
+                                <i class="bi bi-moon" id="theme-icon"></i> Dark Mode
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}">
+                                <i class="bi bi-box-arrow-right"></i> Logout
+                            </a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="container-fluid mt-3">
+                    {% for message in messages %}
+                        <div class="alert alert-info alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Bottom Navigation for Mobile -->
+    {% if current_user.is_authenticated %}
+    <nav class="bottom-nav d-lg-none">
+        <a href="{{ url_for('dashboard') }}" class="bottom-nav-item {{ 'active' if request.endpoint == 'dashboard' }}">
+            <i class="bi bi-house"></i>
+            <small>Dashboard</small>
+        </a>
+        <a href="{{ url_for('add_expense') }}" class="bottom-nav-item {{ 'active' if request.endpoint == 'add_expense' }}">
+            <i class="bi bi-plus-circle"></i>
+            <small>Add</small>
+        </a>
+        <a href="{{ url_for('expenses') }}" class="bottom-nav-item {{ 'active' if request.endpoint == 'expenses' }}">
+            <i class="bi bi-list-ul"></i>
+            <small>Expenses</small>
+        </a>
+        <a href="{{ url_for('reports') }}" class="bottom-nav-item {{ 'active' if request.endpoint == 'reports' }}">
+            <i class="bi bi-bar-chart"></i>
+            <small>Reports</small>
+        </a>
+        <a href="{{ url_for('settings') }}" class="bottom-nav-item {{ 'active' if request.endpoint == 'settings' }}">
+            <i class="bi bi-gear"></i>
+            <small>Settings</small>
+        </a>
+    </nav>
+    {% endif %}
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

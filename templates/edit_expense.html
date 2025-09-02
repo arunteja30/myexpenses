@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Expense - Expense Manager{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-3">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-pencil text-primary me-2"></i>Edit Expense
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="amount" class="form-label">Amount (₹)</label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text">
+                                    <i class="bi bi-currency-rupee"></i>
+                                </span>
+                                <input type="number" class="form-control" id="amount" name="amount" 
+                                       step="0.01" min="0" required value="{{ expense.amount }}">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="category" class="form-label">Category</label>
+                            <select class="form-select form-select-lg" id="category" name="category" required>
+                                <option value="">Select Category</option>
+                                {% for category in categories %}
+                                <option value="{{ category }}" {{ 'selected' if expense.category == category }}>
+                                    {{ category }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <input type="text" class="form-control form-control-lg" id="description" 
+                                   name="description" value="{{ expense.description or '' }}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="expense_type" class="form-label">Expense Type</label>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <input type="radio" class="btn-check" name="expense_type" 
+                                           id="wanted" value="wanted" {{ 'checked' if expense.expense_type == 'wanted' }}>
+                                    <label class="btn btn-outline-success w-100" for="wanted">
+                                        <i class="bi bi-check-circle me-1"></i>Wanted
+                                    </label>
+                                </div>
+                                <div class="col-6">
+                                    <input type="radio" class="btn-check" name="expense_type" 
+                                           id="unwanted" value="unwanted" {{ 'checked' if expense.expense_type == 'unwanted' }}>
+                                    <label class="btn btn-outline-warning w-100" for="unwanted">
+                                        <i class="bi bi-exclamation-circle me-1"></i>Unwanted
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="date" class="form-label">Date</label>
+                            <input type="date" class="form-control form-control-lg" id="date" 
+                                   name="date" value="{{ expense.date.strftime('%Y-%m-%d') }}">
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-check-circle me-2"></i>Update Expense
+                            </button>
+                            <a href="{{ url_for('expenses') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>Back to Expenses
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Expense Details -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6 class="card-title">Current Details</h6>
+                    <div class="row">
+                        <div class="col-6">
+                            <small class="text-muted">Created:</small><br>
+                            <strong>{{ expense.created_at.strftime('%d %b %Y at %I:%M %p') }}</strong>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">By:</small><br>
+                            <strong>{{ expense.user.username }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,381 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Expense Manager{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-3">
+    <!-- Welcome Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="welcome-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-1">Welcome back, {{ current_user.username }}!</h4>
+                        <p class="text-muted mb-0">Here's your financial overview</p>
+                    </div>
+                    {% if total_expenses == 0 %}
+                    <div>
+                        <a href="{{ url_for('add_sample_data') }}" class="btn btn-info btn-sm">
+                            <i class="bi bi-graph-up"></i> Add Sample Data
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="stat-card bg-primary text-white">
+                <div class="stat-icon">
+                    <i class="bi bi-currency-rupee"></i>
+                </div>
+                <div class="stat-content">
+                    <h6>Monthly Income</h6>
+                    <h4>₹{{ "{:,.2f}".format(monthly_income) }}</h4>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-6 col-md-3">
+            <div class="stat-card bg-danger text-white">
+                <div class="stat-icon">
+                    <i class="bi bi-graph-down"></i>
+                </div>
+                <div class="stat-content">
+                    <h6>This Month</h6>
+                    <h4>₹{{ "{:,.2f}".format(monthly_expenses) }}</h4>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-6 col-md-3">
+            <div class="stat-card bg-success text-white">
+                <div class="stat-icon">
+                    <i class="bi bi-piggy-bank"></i>
+                </div>
+                <div class="stat-content">
+                    <h6>Savings</h6>
+                    <h4>₹{{ "{:,.2f}".format(monthly_savings) }}</h4>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-6 col-md-3">
+            <div class="stat-card bg-info text-white">
+                <div class="stat-icon">
+                    <i class="bi bi-percent"></i>
+                </div>
+                <div class="stat-content">
+                    <h6>Savings Rate</h6>
+                    <h4>{{ "{:.1f}".format(savings_percentage) }}%</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Savings Goal Progress -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-target text-primary me-2"></i>Savings Goal Progress
+                    </h5>
+                    <div class="row align-items-center">
+                        <div class="col-8">
+                            <p class="mb-1">Target: ₹{{ "{:,.0f}".format(savings_goal.target_amount) }} in {{ savings_goal.target_months }} months</p>
+                            <div class="progress mb-2" style="height: 8px;">
+                                {% set progress = (monthly_savings * savings_goal.target_months / savings_goal.target_amount * 100) if savings_goal.target_amount > 0 else 0 %}
+                                {% set progress_clamped = [progress, 100]|min %}
+                                <div class="progress-bar" style="width: {{ progress_clamped }}%"></div>
+                            </div>
+                            <small class="text-muted">
+                                Need ₹{{ "{:,.0f}".format(savings_goal.target_amount / savings_goal.target_months) }} per month
+                            </small>
+                        </div>
+                        <div class="col-4 text-end">
+                            <span class="badge bg-primary fs-6">{{ "{:.1f}".format(progress_clamped) }}%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <a href="{{ url_for('add_expense') }}" class="quick-action-card text-decoration-none">
+                <i class="bi bi-plus-circle"></i>
+                <span>Add Expense</span>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="{{ url_for('expenses') }}" class="quick-action-card text-decoration-none">
+                <i class="bi bi-list-ul"></i>
+                <span>View Expenses</span>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="{{ url_for('reports') }}" class="quick-action-card text-decoration-none">
+                <i class="bi bi-bar-chart"></i>
+                <span>Reports</span>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="quick-action-card" onclick="loadSavingsSuggestions()">
+                <i class="bi bi-lightbulb"></i>
+                <span>Suggestions</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">Expenses by Category</h6>
+                    <div class="chart-container" style="position: relative; height: 250px; width: 100%;">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">Monthly Trend</h6>
+                    <div class="chart-container" style="position: relative; height: 250px; width: 100%;">
+                        <canvas id="monthlyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Expenses -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">Recent Expenses</h6>
+                    <a href="{{ url_for('expenses') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_expenses %}
+                        <div class="list-group list-group-flush">
+                            {% for expense in recent_expenses %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">{{ expense.description or expense.category }}</h6>
+                                        <small class="text-muted">
+                                            {{ expense.date.strftime('%d %b %Y') }} • {{ expense.category }}
+                                            {% if current_user.is_admin and expense.user.username != current_user.username %}
+                                            • {{ expense.user.username }}
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="fw-bold text-danger">₹{{ "{:,.2f}".format(expense.amount) }}</span>
+                                        <br>
+                                        <span class="badge bg-{{ 'warning' if expense.expense_type == 'unwanted' else 'success' }} small">
+                                            {{ expense.expense_type.title() }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-inbox display-4 text-muted"></i>
+                            <p class="text-muted mt-2">No expenses yet</p>
+                            <a href="{{ url_for('add_expense') }}" class="btn btn-primary">Add Your First Expense</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Savings Suggestions Modal -->
+<div class="modal fade" id="suggestionsModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-lightbulb text-warning me-2"></i>Savings Suggestions
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="suggestions-content">
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Function to create chart with error handling
+function createChart(chartId, fetchUrl, chartConfig) {
+    fetch(fetchUrl)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
+            const ctx = document.getElementById(chartId);
+            if (!ctx) {
+                throw new Error(`Chart canvas with ID '${chartId}' not found`);
+            }
+            
+            // Update chart configuration with actual data
+            chartConfig.data.labels = data.labels;
+            chartConfig.data.datasets[0].data = data.data;
+            
+            new Chart(ctx.getContext('2d'), chartConfig);
+        })
+        .catch(error => {
+            console.error(`Error loading ${chartId}:`, error);
+            const chartContainer = document.getElementById(chartId)?.parentElement;
+            if (chartContainer) {
+                chartContainer.innerHTML = `
+                    <div class="text-center text-muted p-4">
+                        <i class="bi bi-exclamation-triangle fs-1 mb-2 d-block"></i>
+                        <p>Unable to load chart</p>
+                        <small>${error.message}</small>
+                    </div>
+                `;
+            }
+        });
+}
+
+// Load category chart
+createChart('categoryChart', '/api/chart_data?type=category', {
+    type: 'doughnut',
+    data: {
+        labels: [],
+        datasets: [{
+            data: [],
+            backgroundColor: [
+                '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
+                '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        aspectRatio: 1.5,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    padding: 15,
+                    usePointStyle: true,
+                    font: {
+                        size: 12
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Load monthly chart
+createChart('monthlyChart', '/api/chart_data?type=monthly', {
+    type: 'line',
+    data: {
+        labels: [],
+        datasets: [{
+            label: 'Monthly Expenses',
+            data: [],
+            borderColor: '#007bff',
+            backgroundColor: 'rgba(0, 123, 255, 0.1)',
+            tension: 0.4,
+            fill: true,
+            borderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        aspectRatio: 2,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: {
+                    color: 'rgba(0,0,0,0.1)'
+                },
+                ticks: {
+                    callback: function(value) {
+                        return '₹' + value.toLocaleString();
+                    }
+                }
+            },
+            x: {
+                grid: {
+                    display: false
+                }
+            }
+        },
+        elements: {
+            point: {
+                backgroundColor: '#007bff',
+                borderColor: '#ffffff',
+                borderWidth: 2
+            }
+        }
+    }
+});
+
+// Load savings suggestions
+function loadSavingsSuggestions() {
+    const modal = new bootstrap.Modal(document.getElementById('suggestionsModal'));
+    modal.show();
+    
+    fetch('/api/savings_suggestions')
+        .then(response => response.json())
+        .then(data => {
+            const content = document.getElementById('suggestions-content');
+            if (data.suggestions && data.suggestions.length > 0) {
+                content.innerHTML = data.suggestions.map(suggestion => 
+                    `<div class="alert alert-info">${suggestion}</div>`
+                ).join('');
+            } else {
+                content.innerHTML = '<div class="alert alert-success">Great! You\'re managing your finances well. Keep it up!</div>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading suggestions:', error);
+            document.getElementById('suggestions-content').innerHTML = 
+                '<div class="alert alert-danger">Unable to load suggestions. Please try again.</div>';
+        });
+}
+</script>
+{% endblock %}

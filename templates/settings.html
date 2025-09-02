@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - Expense Manager{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-3">
+    <div class="row">
+        <div class="col">
+            <h4>
+                <i class="bi bi-gear text-primary me-2"></i>Settings
+            </h4>
+        </div>
+    </div>
+
+    <!-- Profile Settings -->
+    <div class="row mt-4">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-person-circle me-2"></i>Profile Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('update_profile') }}">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="username" 
+                                   value="{{ current_user.username }}" readonly>
+                            <small class="text-muted">Username cannot be changed</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" 
+                                   value="{{ current_user.email }}" readonly>
+                            <small class="text-muted">Email cannot be changed</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="monthly_income" class="form-label">Monthly Income (₹)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-currency-rupee"></i>
+                                </span>
+                                <input type="number" class="form-control" id="monthly_income" 
+                                       name="monthly_income" step="0.01" min="0" 
+                                       value="{{ current_user.monthly_income }}">
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-2"></i>Update Profile
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-target me-2"></i>Savings Goal
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('update_savings_goal') }}">
+                        <div class="mb-3">
+                            <label for="target_amount" class="form-label">Target Amount (₹)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-currency-rupee"></i>
+                                </span>
+                                <input type="number" class="form-control" id="target_amount" 
+                                       name="target_amount" step="0.01" min="0" 
+                                       value="{{ savings_goal.target_amount if savings_goal else 100000 }}">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="target_months" class="form-label">Target Months</label>
+                            <select class="form-select" id="target_months" name="target_months">
+                                <option value="1" {{ 'selected' if savings_goal and savings_goal.target_months == 1 }}>1 Month</option>
+                                <option value="2" {{ 'selected' if savings_goal and savings_goal.target_months == 2 }}>2 Months</option>
+                                <option value="3" {{ 'selected' if savings_goal and savings_goal.target_months == 3 }}>3 Months</option>
+                                <option value="6" {{ 'selected' if savings_goal and savings_goal.target_months == 6 }}>6 Months</option>
+                                <option value="12" {{ 'selected' if savings_goal and savings_goal.target_months == 12 }}>12 Months</option>
+                            </select>
+                        </div>
+                        
+                        {% if savings_goal %}
+                        <div class="mb-3">
+                            <small class="text-muted">
+                                You need to save ₹{{ "{:,.0f}".format(savings_goal.target_amount / savings_goal.target_months) }} per month
+                            </small>
+                        </div>
+                        {% endif %}
+                        
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-circle me-2"></i>Update Goal
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Settings -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-sliders me-2"></i>App Preferences
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">Dark Mode</h6>
+                                    <small class="text-muted">Switch between light and dark themes</small>
+                                </div>
+                                <button class="btn btn-outline-primary" onclick="toggleTheme()">
+                                    <i class="bi bi-moon" id="theme-toggle-icon"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">Install App</h6>
+                                    <small class="text-muted">Add to home screen for quick access</small>
+                                </div>
+                                <button class="btn btn-outline-success" onclick="installApp()" id="install-btn">
+                                    <i class="bi bi-download"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Account Statistics -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-graph-up me-2"></i>Account Statistics
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3 text-center">
+                        <div class="col-6 col-md-3">
+                            <div class="border rounded p-3">
+                                <h4 class="text-primary mb-1" id="total-expenses">₹0</h4>
+                                <small class="text-muted">Total Expenses</small>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="border rounded p-3">
+                                <h4 class="text-success mb-1" id="avg-monthly">₹0</h4>
+                                <small class="text-muted">Avg Monthly</small>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="border rounded p-3">
+                                <h4 class="text-info mb-1" id="expense-count">0</h4>
+                                <small class="text-muted">Total Records</small>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="border rounded p-3">
+                                <h4 class="text-warning mb-1" id="member-since">-</h4>
+                                <small class="text-muted">Member Since</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Options -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-download me-2"></i>Export Data
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Download your expense data for backup or analysis.</p>
+                    <div class="d-grid gap-2 d-md-flex">
+                        <button class="btn btn-outline-primary" onclick="exportToCSV()">
+                            <i class="bi bi-file-earmark-spreadsheet me-2"></i>Export to CSV
+                        </button>
+                        <button class="btn btn-outline-success" onclick="exportToJSON()">
+                            <i class="bi bi-file-earmark-code me-2"></i>Export to JSON
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Danger Zone -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-exclamation-triangle me-2"></i>Danger Zone
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">These actions are irreversible. Please be careful.</p>
+                    <button class="btn btn-outline-danger" onclick="confirmDataClear()">
+                        <i class="bi bi-trash me-2"></i>Clear All My Data
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modals -->
+<div class="modal fade" id="clearDataModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-danger">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Confirm Data Deletion
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete all your expense data?</p>
+                <p class="text-danger"><strong>This action cannot be undone!</strong></p>
+                <p>Type <strong>DELETE</strong> to confirm:</p>
+                <input type="text" class="form-control" id="confirmInput" placeholder="Type DELETE">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn" disabled>Delete All Data</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Update theme toggle icon based on current theme
+function updateThemeIcon() {
+    const isDark = document.getElementById('app-body').getAttribute('data-bs-theme') === 'dark';
+    const icon = document.getElementById('theme-toggle-icon');
+    if (icon) {
+        icon.className = isDark ? 'bi bi-sun' : 'bi bi-moon';
+    }
+}
+
+// Check if app is installed
+function checkInstallStatus() {
+    const installBtn = document.getElementById('install-btn');
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+        installBtn.innerHTML = '<i class="bi bi-check-circle"></i>';
+        installBtn.disabled = true;
+        installBtn.classList.remove('btn-outline-success');
+        installBtn.classList.add('btn-success');
+    }
+}
+
+// Export functions
+function exportToCSV() {
+    // This would make a request to a backend endpoint to generate CSV
+    showNotification('CSV export feature coming soon!', 'info');
+}
+
+function exportToJSON() {
+    // This would make a request to a backend endpoint to generate JSON
+    showNotification('JSON export feature coming soon!', 'info');
+}
+
+// Clear data confirmation
+function confirmDataClear() {
+    const modal = new bootstrap.Modal(document.getElementById('clearDataModal'));
+    modal.show();
+}
+
+// Enable delete button only when correct confirmation is typed
+document.getElementById('confirmInput').addEventListener('input', function() {
+    const deleteBtn = document.getElementById('confirmDeleteBtn');
+    deleteBtn.disabled = this.value !== 'DELETE';
+});
+
+// Load account statistics
+function loadStats() {
+    // This would make API calls to get user statistics
+    // For now, using placeholder data
+    const memberSince = new Date('{{ current_user.created_at }}').toLocaleDateString('en-US', {
+        month: 'short',
+        year: 'numeric'
+    });
+    
+    document.getElementById('member-since').textContent = memberSince;
+    
+    // You would implement actual API calls here
+    // fetch('/api/user_stats').then(response => response.json()).then(data => {
+    //     document.getElementById('total-expenses').textContent = formatCurrency(data.total_expenses);
+    //     document.getElementById('avg-monthly').textContent = formatCurrency(data.avg_monthly);
+    //     document.getElementById('expense-count').textContent = data.expense_count;
+    // });
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    updateThemeIcon();
+    checkInstallStatus();
+    loadStats();
+});
+</script>
+{% endblock %}

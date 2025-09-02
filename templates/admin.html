@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel - Expense Manager{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-3">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h4>
+                <i class="bi bi-shield-check text-primary me-2"></i>Admin Panel
+            </h4>
+            <p class="text-muted">Manage users and monitor system-wide expenses</p>
+        </div>
+    </div>
+
+    <!-- Admin Stats -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="stat-card bg-primary text-white">
+                <div class="stat-icon">
+                    <i class="bi bi-people"></i>
+                </div>
+                <div class="stat-content">
+                    <h6>Total Users</h6>
+                    <h4>{{ total_users }}</h4>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-6 col-md-3">
+            <div class="stat-card bg-danger text-white">
+                <div class="stat-icon">
+                    <i class="bi bi-currency-rupee"></i>
+                </div>
+                <div class="stat-content">
+                    <h6>Total Expenses</h6>
+                    <h4>₹{{ "{:,.0f}".format(total_expenses) }}</h4>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-6 col-md-3">
+            <div class="stat-card bg-success text-white">
+                <div class="stat-icon">
+                    <i class="bi bi-graph-up"></i>
+                </div>
+                <div class="stat-content">
+                    <h6>Avg Per User</h6>
+                    <h4>₹{{ "{:,.0f}".format(total_expenses / total_users if total_users > 0 else 0) }}</h4>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-6 col-md-3">
+            <div class="stat-card bg-info text-white">
+                <div class="stat-icon">
+                    <i class="bi bi-calendar-month"></i>
+                </div>
+                <div class="stat-content">
+                    <h6>This Month</h6>
+                    <h4 id="monthlyTotal">₹0</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <a href="{{ url_for('add_user') }}" class="quick-action-card text-decoration-none">
+                <i class="bi bi-person-plus"></i>
+                <span>Add User</span>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{{ url_for('expenses') }}" class="quick-action-card text-decoration-none">
+                <i class="bi bi-list-ul"></i>
+                <span>All Expenses</span>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{{ url_for('reports') }}" class="quick-action-card text-decoration-none">
+                <i class="bi bi-bar-chart"></i>
+                <span>System Reports</span>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <div class="quick-action-card" onclick="exportSystemData()">
+                <i class="bi bi-download"></i>
+                <span>Export Data</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Users Management -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="bi bi-people me-2"></i>Manage Users
+                    </h6>
+                    <a href="{{ url_for('add_user') }}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-person-plus me-1"></i>Add User
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>User</th>
+                                    <th>Email</th>
+                                    <th>Monthly Income</th>
+                                    <th>Total Expenses</th>
+                                    <th>Joined</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="user-avatar me-2">
+                                                <i class="bi bi-person-circle fs-4 text-primary"></i>
+                                            </div>
+                                            <div>
+                                                <strong>{{ user.username }}</strong>
+                                                {% if user.is_admin %}
+                                                <span class="badge bg-warning ms-1">Admin</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ user.email }}</td>
+                                    <td>₹{{ "{:,.0f}".format(user.monthly_income) }}</td>
+                                    <td id="user-expenses-{{ user.id }}">Loading...</td>
+                                    <td>{{ user.created_at.strftime('%d %b %Y') }}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-primary" onclick="viewUserDetails({{ user.id }})">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            {% if not user.is_admin or user.id == current_user.id %}
+                                            <button class="btn btn-outline-secondary" onclick="editUser({{ user.id }})">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            {% endif %}
+                                            {% if user.id != current_user.id %}
+                                            <button class="btn btn-outline-danger" onclick="confirmDeleteUser({{ user.id }}, '{{ user.username }}')">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Overview Chart -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-graph-up me-2"></i>System Overview
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="systemChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Details Modal -->
+<div class="modal fade" id="userDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">User Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="userDetailsContent">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete User Confirmation Modal -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-danger">Confirm User Deletion</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete user <strong id="deleteUserName"></strong>?</p>
+                <p class="text-danger">This will also delete all their expenses. This action cannot be undone!</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteUserBtn">Delete User</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Load user expenses
+function loadUserExpenses() {
+    {% for user in users %}
+    fetch(`/api/user_expenses/{{ user.id }}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('user-expenses-{{ user.id }}').textContent = 
+                '₹' + data.total_expenses.toLocaleString();
+        })
+        .catch(error => {
+            document.getElementById('user-expenses-{{ user.id }}').textContent = '₹0';
+        });
+    {% endfor %}
+}
+
+// View user details
+function viewUserDetails(userId) {
+    const modal = new bootstrap.Modal(document.getElementById('userDetailsModal'));
+    
+    // Show loading
+    document.getElementById('userDetailsContent').innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    `;
+    
+    modal.show();
+    
+    // Fetch user details (would be implemented in backend)
+    // For now, show placeholder
+    setTimeout(() => {
+        document.getElementById('userDetailsContent').innerHTML = `
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                User details feature coming soon!
+            </div>
+        `;
+    }, 1000);
+}
+
+// Edit user (placeholder)
+function editUser(userId) {
+    showNotification('Edit user feature coming soon!', 'info');
+}
+
+// Confirm delete user
+function confirmDeleteUser(userId, username) {
+    document.getElementById('deleteUserName').textContent = username;
+    document.getElementById('confirmDeleteUserBtn').onclick = () => deleteUser(userId);
+    
+    const modal = new bootstrap.Modal(document.getElementById('deleteUserModal'));
+    modal.show();
+}
+
+// Delete user (placeholder)
+function deleteUser(userId) {
+    showNotification('Delete user feature coming soon!', 'info');
+    bootstrap.Modal.getInstance(document.getElementById('deleteUserModal')).hide();
+}
+
+// Export system data
+function exportSystemData() {
+    showNotification('System data export feature coming soon!', 'info');
+}
+
+// Load system chart
+function loadSystemChart() {
+    fetch('/api/chart_data?type=monthly')
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('systemChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Monthly System Expenses',
+                        data: data.data,
+                        backgroundColor: 'rgba(0, 123, 255, 0.8)',
+                        borderColor: 'rgba(0, 123, 255, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        });
+}
+
+// Load monthly total
+function loadMonthlyTotal() {
+    fetch('/api/chart_data?type=monthly')
+        .then(response => response.json())
+        .then(data => {
+            const currentMonth = new Date().getMonth();
+            const monthlyTotal = data.data[currentMonth] || 0;
+            document.getElementById('monthlyTotal').textContent = '₹' + monthlyTotal.toLocaleString();
+        });
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    loadUserExpenses();
+    loadSystemChart();
+    loadMonthlyTotal();
+});
+</script>
+{% endblock %}

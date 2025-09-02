@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}Add Expense - Expense Manager{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-3">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-plus-circle text-primary me-2"></i>Add New Expense
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="amount" class="form-label">Amount (₹)</label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text">
+                                    <i class="bi bi-currency-rupee"></i>
+                                </span>
+                                <input type="number" class="form-control" id="amount" name="amount" 
+                                       step="0.01" min="0" required placeholder="0.00">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="category" class="form-label">Category</label>
+                            <select class="form-select form-select-lg" id="category" name="category" required>
+                                <option value="">Select Category</option>
+                                {% for category in categories %}
+                                <option value="{{ category }}">{{ category }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <input type="text" class="form-control form-control-lg" id="description" 
+                                   name="description" placeholder="What did you buy?">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="expense_type" class="form-label">Expense Type</label>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <input type="radio" class="btn-check" name="expense_type" 
+                                           id="wanted" value="wanted" checked>
+                                    <label class="btn btn-outline-success w-100" for="wanted">
+                                        <i class="bi bi-check-circle me-1"></i>Wanted
+                                    </label>
+                                </div>
+                                <div class="col-6">
+                                    <input type="radio" class="btn-check" name="expense_type" 
+                                           id="unwanted" value="unwanted">
+                                    <label class="btn btn-outline-warning w-100" for="unwanted">
+                                        <i class="bi bi-exclamation-circle me-1"></i>Unwanted
+                                    </label>
+                                </div>
+                            </div>
+                            <small class="text-muted">
+                                Mark as "unwanted" if this could have been avoided
+                            </small>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="date" class="form-label">Date</label>
+                            <input type="date" class="form-control form-control-lg" id="date" 
+                                   name="date" value="{{ datetime.now().strftime('%Y-%m-%d') }}">
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-plus-circle me-2"></i>Add Expense
+                            </button>
+                            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Quick Add Suggestions -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6 class="card-title">Quick Add</h6>
+                    <div class="row g-2">
+                        <div class="col-6 col-md-3">
+                            <button class="btn btn-outline-primary w-100 quick-add-btn" 
+                                    data-amount="50" data-category="Food" data-description="Lunch">
+                                🍽️ Lunch<br><small>₹50</small>
+                            </button>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <button class="btn btn-outline-primary w-100 quick-add-btn" 
+                                    data-amount="30" data-category="Transportation" data-description="Auto/Bus">
+                                🚗 Transport<br><small>₹30</small>
+                            </button>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <button class="btn btn-outline-primary w-100 quick-add-btn" 
+                                    data-amount="100" data-category="Shopping" data-description="Groceries">
+                                🛒 Groceries<br><small>₹100</small>
+                            </button>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <button class="btn btn-outline-primary w-100 quick-add-btn" 
+                                    data-amount="200" data-category="Entertainment" data-description="Movie">
+                                🎬 Movie<br><small>₹200</small>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Quick add functionality
+document.querySelectorAll('.quick-add-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.getElementById('amount').value = this.dataset.amount;
+        document.getElementById('category').value = this.dataset.category;
+        document.getElementById('description').value = this.dataset.description;
+        
+        // Scroll to form
+        document.querySelector('.card').scrollIntoView({ behavior: 'smooth' });
+    });
+});
+
+// Focus on amount field when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('amount').focus();
+});
+</script>
+{% endblock %}

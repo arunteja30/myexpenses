@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="72" height="72" viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background -->
+    <rect width="72" height="72" fill="#007bff" rx="9"/>
+    
+    <!-- Wallet icon -->
+    <g transform="translate(18, 18)">
+        <!-- Wallet base -->
+        <rect width="36" height="28.0" fill="white" rx="3" stroke="none"/>
+        
+        <!-- Wallet detail -->
+        <rect x="3" y="7" width="28.0" height="9" fill="#007bff" rx="1"/>
+        
+        <!-- Money symbol -->
+        <text x="18" y="20.0" font-family="Arial, sans-serif" 
+              font-size="9" font-weight="bold" text-anchor="middle" fill="#28a745">₹</text>
+    </g>
+</svg>

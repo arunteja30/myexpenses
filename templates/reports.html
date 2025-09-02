@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+
+{% block title %}Reports - Expense Manager{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-3">
+    <div class="row mb-4">
+        <div class="col">
+            <h4>
+                <i class="bi bi-bar-chart text-primary me-2"></i>Analytics & Reports
+            </h4>
+        </div>
+    </div>
+
+    <!-- Chart Type Selector -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="btn-group w-100" role="group">
+                        <input type="radio" class="btn-check" name="chartType" id="categoryChart" value="category" checked>
+                        <label class="btn btn-outline-primary" for="categoryChart">
+                            <i class="bi bi-pie-chart me-1"></i>Categories
+                        </label>
+
+                        <input type="radio" class="btn-check" name="chartType" id="monthlyChart" value="monthly">
+                        <label class="btn btn-outline-primary" for="monthlyChart">
+                            <i class="bi bi-graph-up me-1"></i>Monthly
+                        </label>
+
+                        <input type="radio" class="btn-check" name="chartType" id="typeChart" value="expense_type">
+                        <label class="btn btn-outline-primary" for="typeChart">
+                            <i class="bi bi-clipboard-data me-1"></i>Types
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Chart -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title" id="chartTitle">Expenses by Category</h5>
+                    <div style="height: 400px; position: relative;">
+                        <canvas id="mainChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="stat-card bg-primary text-white">
+                <div class="stat-icon">
+                    <i class="bi bi-calendar-month"></i>
+                </div>
+                <div class="stat-content">
+                    <h6>This Month</h6>
+                    <h4 id="monthlyTotal">₹0</h4>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-6 col-md-3">
+            <div class="stat-card bg-success text-white">
+                <div class="stat-icon">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+                <div class="stat-content">
+                    <h6>Wanted</h6>
+                    <h4 id="wantedTotal">₹0</h4>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-6 col-md-3">
+            <div class="stat-card bg-warning text-white">
+                <div class="stat-icon">
+                    <i class="bi bi-exclamation-circle"></i>
+                </div>
+                <div class="stat-content">
+                    <h6>Unwanted</h6>
+                    <h4 id="unwantedTotal">₹0</h4>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-6 col-md-3">
+            <div class="stat-card bg-info text-white">
+                <div class="stat-icon">
+                    <i class="bi bi-percent"></i>
+                </div>
+                <div class="stat-content">
+                    <h6>Unwanted %</h6>
+                    <h4 id="unwantedPercent">0%</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Categories -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Top Categories This Month</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div id="topCategories" class="list-group list-group-flush">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Savings Insights</h6>
+                </div>
+                <div class="card-body">
+                    <div id="savingsInsights">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentChart = null;
+
+// Chart configurations
+const chartConfigs = {
+    category: {
+        type: 'doughnut',
+        title: 'Expenses by Category',
+        colors: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF']
+    },
+    monthly: {
+        type: 'bar',
+        title: 'Monthly Expenses Trend',
+        colors: '#007bff'
+    },
+    expense_type: {
+        type: 'pie',
+        title: 'Wanted vs Unwanted Expenses',
+        colors: ['#28a745', '#ffc107']
+    }
+};
+
+// Load chart data
+function loadChart(type) {
+    const config = chartConfigs[type];
+    document.getElementById('chartTitle').textContent = config.title;
+    
+    fetch(`/api/chart_data?type=${type}`)
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            
+            // Destroy existing chart
+            if (currentChart) {
+                currentChart.destroy();
+            }
+            
+            // Create new chart
+            const chartData = {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Amount (₹)',
+                    data: data.data,
+                    backgroundColor: Array.isArray(config.colors) ? config.colors : [config.colors],
+                    borderColor: Array.isArray(config.colors) ? config.colors : [config.colors],
+                    borderWidth: 1
+                }]
+            };
+            
+            const options = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: type === 'monthly' ? 'top' : 'bottom'
+                    }
+                }
+            };
+            
+            if (type === 'monthly') {
+                options.scales = {
+                    y: {
+                        beginAtZero: true
+                    }
+                };
+            }
+            
+            currentChart = new Chart(ctx, {
+                type: config.type,
+                data: chartData,
+                options: options
+            });
+            
+            // Update top categories if category chart
+            if (type === 'category') {
+                updateTopCategories(data);
+            }
+        });
+}
+
+// Update top categories list
+function updateTopCategories(data) {
+    const container = document.getElementById('topCategories');
+    const categories = data.labels.map((label, index) => ({
+        name: label,
+        amount: data.data[index]
+    })).sort((a, b) => b.amount - a.amount);
+    
+    container.innerHTML = categories.slice(0, 5).map((cat, index) => `
+        <div class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+                <span class="badge bg-primary rounded-pill me-2">${index + 1}</span>
+                ${cat.name}
+            </div>
+            <span class="fw-bold">₹${cat.amount.toLocaleString()}</span>
+        </div>
+    `).join('');
+}
+
+// Load summary stats
+function loadStats() {
+    // Load expense type data for stats
+    fetch('/api/chart_data?type=expense_type')
+        .then(response => response.json())
+        .then(data => {
+            let wantedAmount = 0;
+            let unwantedAmount = 0;
+            
+            data.labels.forEach((label, index) => {
+                if (label.toLowerCase() === 'wanted') {
+                    wantedAmount = data.data[index];
+                } else if (label.toLowerCase() === 'unwanted') {
+                    unwantedAmount = data.data[index];
+                }
+            });
+            
+            const total = wantedAmount + unwantedAmount;
+            const unwantedPercent = total > 0 ? (unwantedAmount / total * 100).toFixed(1) : 0;
+            
+            document.getElementById('monthlyTotal').textContent = `₹${total.toLocaleString()}`;
+            document.getElementById('wantedTotal').textContent = `₹${wantedAmount.toLocaleString()}`;
+            document.getElementById('unwantedTotal').textContent = `₹${unwantedAmount.toLocaleString()}`;
+            document.getElementById('unwantedPercent').textContent = `${unwantedPercent}%`;
+            
+            // Load savings insights
+            loadSavingsInsights(unwantedAmount, unwantedPercent);
+        });
+}
+
+// Load savings insights
+function loadSavingsInsights(unwantedAmount, unwantedPercent) {
+    const insights = [];
+    
+    if (unwantedPercent > 20) {
+        insights.push(`<div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            You spent ${unwantedPercent}% on unwanted items. Try to reduce this to save more.
+        </div>`);
+    } else {
+        insights.push(`<div class="alert alert-success">
+            <i class="bi bi-check-circle me-2"></i>
+            Great! Only ${unwantedPercent}% spent on unwanted items.
+        </div>`);
+    }
+    
+    if (unwantedAmount > 0) {
+        const potentialSavings = unwantedAmount * 0.5;
+        insights.push(`<div class="alert alert-info">
+            <i class="bi bi-lightbulb me-2"></i>
+            You could save ₹${potentialSavings.toLocaleString()} by reducing unwanted expenses by 50%.
+        </div>`);
+    }
+    
+    document.getElementById('savingsInsights').innerHTML = insights.join('');
+}
+
+// Chart type change handlers
+document.querySelectorAll('input[name="chartType"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        loadChart(this.value);
+    });
+});
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    loadChart('category');
+    loadStats();
+});
+</script>
+{% endblock %}
