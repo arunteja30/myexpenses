@@ -59,7 +59,11 @@
                     <button type="submit" class="btn btn-primary me-2">
                         <i class="bi bi-funnel me-1"></i>Filter
                     </button>
+<<<<<<< HEAD
                     <a href="{{ url_for('expenses') }}" class="btn btn-outline-secondary">
+=======
+                    <a href="{{ url_for('expenses') }}" class="btn btn-outline-secondary me-2">
+>>>>>>> 4744b3b (adding export fuctionlity and android intalling issue fix)
                         <i class="bi bi-x-circle me-1"></i>Clear
                     </a>
                 </div>
@@ -67,6 +71,39 @@
         </div>
     </div>
 
+<<<<<<< HEAD
+=======
+    <!-- Export Summary & Actions -->
+    {% if expenses %}
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h6 class="mb-1">
+                        <i class="bi bi-bar-chart text-primary me-2"></i>Export Summary
+                    </h6>
+                    <p class="text-muted mb-0">
+                        Found <strong>{{ expenses|length }}</strong> expenses 
+                        totaling <strong>₹{{ "{:,.2f}".format(expenses|sum(attribute='amount')) }}</strong>
+                        {% if request.args.get('category') or request.args.get('type') or request.args.get('start_date') or request.args.get('end_date') %}
+                        <small class="text-info">(filtered view)</small>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <button type="button" class="btn btn-success me-2" onclick="exportCurrentView()">
+                        <i class="bi bi-download me-1"></i>Export Current View
+                    </button>
+                    <button type="button" class="btn btn-outline-success" onclick="exportAllExpenses()">
+                        <i class="bi bi-file-earmark-spreadsheet me-1"></i>Export All
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+>>>>>>> 4744b3b (adding export fuctionlity and android intalling issue fix)
     <!-- Expenses List -->
     {% if expenses %}
         <div class="row g-3">
@@ -199,6 +236,67 @@ function confirmDelete(expenseId) {
     modal.show();
 }
 
+<<<<<<< HEAD
+=======
+// Export current view with filters
+function exportCurrentView() {
+    // Get current filter parameters
+    const params = new URLSearchParams(window.location.search);
+    const exportUrl = '/export_expenses?' + params.toString();
+    
+    // Show loading notification
+    showNotification('Preparing export...', 'info');
+    
+    // Create download link
+    window.location.href = exportUrl;
+    
+    // Show success message after a delay
+    setTimeout(() => {
+        showNotification('Export downloaded successfully!', 'success');
+    }, 1000);
+}
+
+// Export all expenses (no filters)
+function exportAllExpenses() {
+    showNotification('Preparing full export...', 'info');
+    window.location.href = '/export_expenses';
+    
+    setTimeout(() => {
+        showNotification('All expenses exported successfully!', 'success');
+    }, 1000);
+}
+
+// Show notification function
+function showNotification(message, type = 'info') {
+    const alertClass = {
+        'success': 'alert-success',
+        'error': 'alert-danger',
+        'warning': 'alert-warning',
+        'info': 'alert-info'
+    }[type] || 'alert-info';
+    
+    // Remove existing notifications
+    document.querySelectorAll('.export-notification').forEach(n => n.remove());
+    
+    const notification = document.createElement('div');
+    notification.className = `alert ${alertClass} alert-dismissible fade show position-fixed export-notification`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 4 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 4000);
+}
+
+>>>>>>> 4744b3b (adding export fuctionlity and android intalling issue fix)
 // Auto-submit form on filter change (for better UX)
 document.querySelectorAll('#category, #type').forEach(select => {
     select.addEventListener('change', function() {

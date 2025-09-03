@@ -197,7 +197,39 @@
                     </h6>
                 </div>
                 <div class="card-body">
+<<<<<<< HEAD
                     <p class="text-muted">Download your expense data for backup or analysis.</p>
+=======
+                    <p class="text-muted">Download your complete expense data for backup or analysis.</p>
+                    
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-start">
+                                <i class="bi bi-file-earmark-spreadsheet text-primary me-2 fs-5"></i>
+                                <div>
+                                    <h6 class="mb-1">CSV Export</h6>
+                                    <small class="text-muted">
+                                        Structured format with separate sections for user info, savings goals, and expenses. 
+                                        Perfect for spreadsheet analysis.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-start">
+                                <i class="bi bi-file-earmark-code text-success me-2 fs-5"></i>
+                                <div>
+                                    <h6 class="mb-1">JSON Export</h6>
+                                    <small class="text-muted">
+                                        Complete data with metadata and summary statistics. 
+                                        Ideal for developers and data analysis tools.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+>>>>>>> 4744b3b (adding export fuctionlity and android intalling issue fix)
                     <div class="d-grid gap-2 d-md-flex">
                         <button class="btn btn-outline-primary" onclick="exportToCSV()">
                             <i class="bi bi-file-earmark-spreadsheet me-2"></i>Export to CSV
@@ -280,6 +312,7 @@ function checkInstallStatus() {
 
 // Export functions
 function exportToCSV() {
+<<<<<<< HEAD
     // This would make a request to a backend endpoint to generate CSV
     showNotification('CSV export feature coming soon!', 'info');
 }
@@ -287,6 +320,53 @@ function exportToCSV() {
 function exportToJSON() {
     // This would make a request to a backend endpoint to generate JSON
     showNotification('JSON export feature coming soon!', 'info');
+=======
+    showNotification('Preparing CSV export...', 'info');
+    window.location.href = '/export_user_data_csv';
+    
+    setTimeout(() => {
+        showNotification('CSV file downloaded successfully!', 'success');
+    }, 1000);
+}
+
+function exportToJSON() {
+    showNotification('Preparing JSON export...', 'info');
+    window.location.href = '/export_user_data_json';
+    
+    setTimeout(() => {
+        showNotification('JSON file downloaded successfully!', 'success');
+    }, 1000);
+}
+
+// Show notification function
+function showNotification(message, type = 'info') {
+    const alertClass = {
+        'success': 'alert-success',
+        'error': 'alert-danger',
+        'warning': 'alert-warning',
+        'info': 'alert-info'
+    }[type] || 'alert-info';
+    
+    // Remove existing notifications
+    document.querySelectorAll('.settings-notification').forEach(n => n.remove());
+    
+    const notification = document.createElement('div');
+    notification.className = `alert ${alertClass} alert-dismissible fade show position-fixed settings-notification`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 4 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 4000);
+>>>>>>> 4744b3b (adding export fuctionlity and android intalling issue fix)
 }
 
 // Clear data confirmation
@@ -301,10 +381,43 @@ document.getElementById('confirmInput').addEventListener('input', function() {
     deleteBtn.disabled = this.value !== 'DELETE';
 });
 
+<<<<<<< HEAD
 // Load account statistics
 function loadStats() {
     // This would make API calls to get user statistics
     // For now, using placeholder data
+=======
+// Handle data clearing
+document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+    this.disabled = true;
+    this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Deleting...';
+    
+    fetch('/clear_user_data', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            showNotification('All data cleared successfully! Redirecting...', 'success');
+            setTimeout(() => {
+                window.location.href = '/dashboard';
+            }, 2000);
+        } else {
+            throw new Error('Failed to clear data');
+        }
+    })
+    .catch(error => {
+        showNotification('Failed to clear data: ' + error.message, 'error');
+        this.disabled = false;
+        this.innerHTML = 'Delete All Data';
+    });
+});
+
+// Load account statistics
+function loadStats() {
+>>>>>>> 4744b3b (adding export fuctionlity and android intalling issue fix)
     const memberSince = new Date('{{ current_user.created_at }}').toLocaleDateString('en-US', {
         month: 'short',
         year: 'numeric'
@@ -312,12 +425,35 @@ function loadStats() {
     
     document.getElementById('member-since').textContent = memberSince;
     
+<<<<<<< HEAD
     // You would implement actual API calls here
     // fetch('/api/user_stats').then(response => response.json()).then(data => {
     //     document.getElementById('total-expenses').textContent = formatCurrency(data.total_expenses);
     //     document.getElementById('avg-monthly').textContent = formatCurrency(data.avg_monthly);
     //     document.getElementById('expense-count').textContent = data.expense_count;
     // });
+=======
+    // Load actual expense statistics
+    fetch('/api/user_expenses/{{ current_user.id }}')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('total-expenses').textContent = '₹' + data.total_expenses.toLocaleString();
+            document.getElementById('expense-count').textContent = data.expense_count;
+            
+            // Calculate average monthly (assuming user has been member for at least 1 month)
+            const memberSinceDate = new Date('{{ current_user.created_at }}');
+            const monthsSinceMember = Math.max(1, Math.ceil((new Date() - memberSinceDate) / (1000 * 60 * 60 * 24 * 30)));
+            const avgMonthly = data.total_expenses / monthsSinceMember;
+            document.getElementById('avg-monthly').textContent = '₹' + avgMonthly.toLocaleString(undefined, {maximumFractionDigits: 0});
+        })
+        .catch(error => {
+            console.error('Error loading stats:', error);
+            // Set default values on error
+            document.getElementById('total-expenses').textContent = '₹0';
+            document.getElementById('avg-monthly').textContent = '₹0';
+            document.getElementById('expense-count').textContent = '0';
+        });
+>>>>>>> 4744b3b (adding export fuctionlity and android intalling issue fix)
 }
 
 // Initialize

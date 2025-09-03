@@ -1,4 +1,10 @@
 // Progressive Web App functionality
+<<<<<<< HEAD
+=======
+let deferredPrompt;
+
+// Service Worker Registration
+>>>>>>> 4744b3b (adding export fuctionlity and android intalling issue fix)
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
         navigator.serviceWorker.register('/static/sw.js')
@@ -11,6 +17,78 @@ if ('serviceWorker' in navigator) {
     });
 }
 
+<<<<<<< HEAD
+=======
+// PWA Install Prompt
+window.addEventListener('beforeinstallprompt', (e) => {
+    console.log('PWA install prompt triggered');
+    // Prevent the mini-infobar from appearing on mobile
+    e.preventDefault();
+    // Stash the event so it can be triggered later
+    deferredPrompt = e;
+    // Show install button if it exists
+    showInstallButton();
+});
+
+function showInstallButton() {
+    const installButton = document.getElementById('install-button');
+    if (installButton) {
+        installButton.style.display = 'block';
+    } else {
+        // Create and show install banner
+        createInstallBanner();
+    }
+}
+
+function createInstallBanner() {
+    if (document.getElementById('install-banner')) return; // Already exists
+    
+    const banner = document.createElement('div');
+    banner.id = 'install-banner';
+    banner.className = 'alert alert-info alert-dismissible fade show position-fixed';
+    banner.style.cssText = 'top: 80px; left: 10px; right: 10px; z-index: 1050;';
+    banner.innerHTML = `
+        <strong>Install App</strong> Add Expense Manager to your home screen for quick access!
+        <button type="button" class="btn btn-sm btn-primary ms-2" onclick="triggerInstall()">Install</button>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(banner);
+    
+    // Auto-hide after 10 seconds
+    setTimeout(() => {
+        if (banner && banner.parentNode) {
+            banner.remove();
+        }
+    }, 10000);
+}
+
+function triggerInstall() {
+    const banner = document.getElementById('install-banner');
+    if (banner) banner.remove();
+    
+    if (deferredPrompt) {
+        // Show the install prompt
+        deferredPrompt.prompt();
+        // Wait for the user to respond to the prompt
+        deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+                console.log('User accepted the install prompt');
+            } else {
+                console.log('User dismissed the install prompt');
+            }
+            deferredPrompt = null;
+        });
+    }
+}
+
+// Check if app is already installed
+window.addEventListener('appinstalled', (evt) => {
+    console.log('PWA was installed');
+    const banner = document.getElementById('install-banner');
+    if (banner) banner.remove();
+});
+
+>>>>>>> 4744b3b (adding export fuctionlity and android intalling issue fix)
 // Theme Management
 function initTheme() {
     const savedTheme = localStorage.getItem('theme') || 'light';
@@ -48,8 +126,12 @@ function toggleTheme() {
     }
 }
 
+<<<<<<< HEAD
 // Install PWA prompt
 let deferredPrompt;
+=======
+// Install PWA prompt - using existing deferredPrompt variable
+>>>>>>> 4744b3b (adding export fuctionlity and android intalling issue fix)
 window.addEventListener('beforeinstallprompt', (e) => {
     // Prevent Chrome 67 and earlier from automatically showing the prompt
     e.preventDefault();

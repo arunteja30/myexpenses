@@ -519,6 +519,7 @@ def user_expenses(user_id):
     
     return jsonify({'total_expenses': total_expenses})
 
+<<<<<<< HEAD
 @app.route('/add_sample_data')
 @login_required
 def add_sample_data():
@@ -570,6 +571,519 @@ def add_sample_data():
     
     flash('Sample data added successfully! You can now see charts and analytics.')
     return redirect(url_for('dashboard'))
+=======
+@app.route('/admin/export_data')
+@login_required
+def export_data():
+    if not current_user.is_admin:
+        flash('Access denied. Admin only.')
+        return redirect(url_for('dashboard'))
+    
+    import csv
+    import io
+    from flask import make_response
+    
+    try:
+        # Create CSV data
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Write headers
+        writer.writerow([
+            'User ID', 'Username', 'Email', 'Monthly Income', 'Is Admin', 'User Created At',
+            'Savings Goal ID', 'Savings Goal Amount', 'Savings Goal Deadline', 'Savings Goal Created',
+            'Expense ID', 'Amount', 'Category', 'Description', 'Expense Type',
+            'Date', 'Expense Created At'
+        ])
+        
+        # Get all users with their expenses and savings goals
+        users = User.query.all()
+        for user in users:
+            # Get user's savings goals
+            savings_goals = SavingsGoal.query.filter_by(user_id=user.id).all()
+            
+            # If user has expenses, include them
+            if user.expenses:
+                for expense in user.expenses:
+                    # For each expense, include all savings goals (or empty if none)
+                    if savings_goals:
+                        for goal in savings_goals:
+                            writer.writerow([
+                                user.id,
+                                user.username,
+                                user.email,
+                                user.monthly_income,
+                                user.is_admin,
+                                user.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                                goal.id,
+                                goal.amount,
+                                goal.deadline.strftime('%Y-%m-%d') if goal.deadline else '',
+                                goal.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                                expense.id,
+                                expense.amount,
+                                expense.category,
+                                expense.description or '',
+                                expense.expense_type,
+                                expense.date.strftime('%Y-%m-%d'),
+                                expense.created_at.strftime('%Y-%m-%d %H:%M:%S')
+                            ])
+                    else:
+                        # User has expenses but no savings goals
+                        writer.writerow([
+                            user.id,
+                            user.username,
+                            user.email,
+                            user.monthly_income,
+                            user.is_admin,
+                            user.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                            '', '', '', '',
+                            expense.id,
+                            expense.amount,
+                            expense.category,
+                            expense.description or '',
+                            expense.expense_type,
+                            expense.date.strftime('%Y-%m-%d'),
+                            expense.created_at.strftime('%Y-%m-%d %H:%M:%S')
+                        ])
+            else:
+                # User with no expenses
+                if savings_goals:
+                    for goal in savings_goals:
+                        writer.writerow([
+                            user.id,
+                            user.username,
+                            user.email,
+                            user.monthly_income,
+                            user.is_admin,
+                            user.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                            goal.id,
+                            goal.amount,
+                            goal.deadline.strftime('%Y-%m-%d') if goal.deadline else '',
+                            goal.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                            '', '', '', '', '', '', ''
+                        ])
+                else:
+                    # User with no expenses and no savings goals
+                    writer.writerow([
+                        user.id,
+                        user.username,
+                        user.email,
+                        user.monthly_income,
+                        user.is_admin,
+                        user.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                        '', '', '', '',
+                        '', '', '', '', '', '', ''
+                    ])
+        
+        # Create response
+        output.seek(0)
+        response = make_response(output.getvalue())
+        response.headers['Content-Type'] = 'text/csv'
+        response.headers['Content-Disposition'] = f'attachment; filename=expense_data_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+        
+        return response
+        
+    except Exception as e:
+        flash(f'Export failed: {str(e)}')
+        return redirect(url_for('admin'))
+
+@app.route('/admin/import_data', methods=['GET', 'POST'])
+@login_required
+def import_data():
+    if not current_user.is_admin:
+        flash('Access denied. Admin only.')
+        return redirect(url_for('dashboard'))
+    
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            flash('No file selected')
+            return redirect(url_for('admin'))
+        
+        file = request.files['file']
+        if file.filename == '':
+            flash('No file selected')
+            return redirect(url_for('admin'))
+        
+        if not file.filename.endswith('.csv'):
+            flash('Please upload a CSV file')
+            return redirect(url_for('admin'))
+        
+        try:
+            import csv
+            import io
+            
+            # Read CSV content
+            stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
+            csv_input = csv.DictReader(stream)
+            
+            imported_users = 0
+            imported_expenses = 0
+            errors = []
+            
+            # Track existing users to avoid duplicates
+            existing_usernames = {user.username for user in User.query.all()}
+            existing_emails = {user.email for user in User.query.all()}
+            
+            for row_num, row in enumerate(csv_input, start=2):
+                try:
+                    # Skip empty rows
+                    if not any(row.values()):
+                        continue
+                    
+                    username = row.get('Username', '').strip()
+                    email = row.get('Email', '').strip()
+                    
+                    if not username or not email:
+                        continue
+                    
+                    # Check if user exists
+                    user = User.query.filter_by(username=username).first()
+                    
+                    if not user:
+                        # Create new user if username/email not already exists
+                        if username in existing_usernames:
+                            errors.append(f'Row {row_num}: Username {username} already exists')
+                            continue
+                        if email in existing_emails:
+                            errors.append(f'Row {row_num}: Email {email} already exists')
+                            continue
+                        
+                        user = User(
+                            username=username,
+                            email=email,
+                            monthly_income=float(row.get('Monthly Income', 0) or 0),
+                            is_admin=str(row.get('Is Admin', 'False')).lower() == 'true'
+                        )
+                        user.set_password('password123')  # Default password
+                        db.session.add(user)
+                        db.session.flush()  # Get user ID
+                        
+                        # Create default savings goal
+                        savings_goal = SavingsGoal(user_id=user.id)
+                        db.session.add(savings_goal)
+                        
+                        existing_usernames.add(username)
+                        existing_emails.add(email)
+                        imported_users += 1
+                    
+                    # Add expense if expense data exists
+                    if row.get('Expense ID') and row.get('Amount'):
+                        amount = float(row.get('Amount', 0))
+                        if amount > 0:
+                            expense = Expense(
+                                user_id=user.id,
+                                amount=amount,
+                                category=row.get('Category', 'Other'),
+                                description=row.get('Description', ''),
+                                expense_type=row.get('Expense Type', 'wanted'),
+                                date=datetime.strptime(row.get('Date', datetime.now().strftime('%Y-%m-%d')), '%Y-%m-%d')
+                            )
+                            db.session.add(expense)
+                            imported_expenses += 1
+                
+                except Exception as e:
+                    errors.append(f'Row {row_num}: {str(e)}')
+            
+            db.session.commit()
+            
+            # Show results
+            message = f'Import completed: {imported_users} users, {imported_expenses} expenses imported.'
+            if errors:
+                message += f' {len(errors)} errors occurred.'
+                for error in errors[:5]:  # Show first 5 errors
+                    flash(error, 'warning')
+                if len(errors) > 5:
+                    flash(f'... and {len(errors) - 5} more errors', 'warning')
+            
+            flash(message, 'success')
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Import failed: {str(e)}')
+    
+    return redirect(url_for('admin'))
+
+@app.route('/admin/delete_user/<int:user_id>', methods=['POST'])
+@login_required
+def delete_user(user_id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    if user_id == current_user.id:
+        return jsonify({'error': 'Cannot delete yourself'}), 400
+    
+    try:
+        user = User.query.get_or_404(user_id)
+        
+        # Delete user's expenses first
+        Expense.query.filter_by(user_id=user_id).delete()
+        
+        # Delete user's savings goals
+        SavingsGoal.query.filter_by(user_id=user_id).delete()
+        
+        # Delete user
+        db.session.delete(user)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': f'User {user.username} deleted successfully'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/export_expenses')
+@login_required
+def export_expenses():
+    """Export expenses based on current filters"""
+    import csv
+    import io
+    from flask import make_response
+    
+    try:
+        # Get filter parameters from URL
+        category = request.args.get('category', '')
+        expense_type = request.args.get('type', '')
+        start_date = request.args.get('start_date', '')
+        end_date = request.args.get('end_date', '')
+        
+        # Build query based on user permissions
+        if current_user.is_admin:
+            query = Expense.query.join(User)
+        else:
+            query = Expense.query.filter_by(user_id=current_user.id)
+        
+        # Apply filters
+        if category:
+            query = query.filter(Expense.category == category)
+        if expense_type:
+            query = query.filter(Expense.expense_type == expense_type)
+        if start_date:
+            query = query.filter(Expense.date >= datetime.strptime(start_date, '%Y-%m-%d').date())
+        if end_date:
+            query = query.filter(Expense.date <= datetime.strptime(end_date, '%Y-%m-%d').date())
+        
+        # Get expenses
+        expenses = query.order_by(Expense.date.desc()).all()
+        
+        # Create CSV data
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Write headers
+        if current_user.is_admin:
+            writer.writerow([
+                'Username', 'Email', 'Expense ID', 'Amount', 'Category', 
+                'Description', 'Type', 'Date', 'Created At'
+            ])
+        else:
+            writer.writerow([
+                'Expense ID', 'Amount', 'Category', 'Description', 
+                'Type', 'Date', 'Created At'
+            ])
+        
+        # Write expense data
+        for expense in expenses:
+            if current_user.is_admin:
+                writer.writerow([
+                    expense.user.username,
+                    expense.user.email,
+                    expense.id,
+                    expense.amount,
+                    expense.category,
+                    expense.description or '',
+                    expense.expense_type,
+                    expense.date.strftime('%Y-%m-%d'),
+                    expense.created_at.strftime('%Y-%m-%d %H:%M:%S')
+                ])
+            else:
+                writer.writerow([
+                    expense.id,
+                    expense.amount,
+                    expense.category,
+                    expense.description or '',
+                    expense.expense_type,
+                    expense.date.strftime('%Y-%m-%d'),
+                    expense.created_at.strftime('%Y-%m-%d %H:%M:%S')
+                ])
+        
+        # Create response
+        output.seek(0)
+        filename_prefix = 'all_expenses' if current_user.is_admin else 'my_expenses'
+        response = make_response(output.getvalue())
+        response.headers['Content-Type'] = 'text/csv'
+        response.headers['Content-Disposition'] = f'attachment; filename={filename_prefix}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+        
+        return response
+        
+    except Exception as e:
+        flash(f'Export failed: {str(e)}')
+        return redirect(url_for('expenses'))
+
+@app.route('/export_user_data_csv')
+@login_required
+def export_user_data_csv():
+    """Export current user's data to CSV format"""
+    import csv
+    import io
+    from flask import make_response
+    
+    try:
+        # Get user's expenses and savings goals
+        expenses = Expense.query.filter_by(user_id=current_user.id).order_by(Expense.date.desc()).all()
+        savings_goals = SavingsGoal.query.filter_by(user_id=current_user.id).all()
+        
+        # Create CSV data
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # User information section
+        writer.writerow(['=== USER INFORMATION ==='])
+        writer.writerow(['Username', 'Email', 'Monthly Income', 'Member Since'])
+        writer.writerow([
+            current_user.username,
+            current_user.email,
+            current_user.monthly_income,
+            current_user.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        ])
+        writer.writerow([])  # Empty row
+        
+        # Savings goals section
+        writer.writerow(['=== SAVINGS GOALS ==='])
+        if savings_goals:
+            writer.writerow(['Goal ID', 'Target Amount', 'Target Months', 'Created Date'])
+            for goal in savings_goals:
+                writer.writerow([
+                    goal.id,
+                    goal.target_amount,
+                    goal.target_months,
+                    goal.created_at.strftime('%Y-%m-%d %H:%M:%S')
+                ])
+        else:
+            writer.writerow(['No savings goals found'])
+        writer.writerow([])  # Empty row
+        
+        # Expenses section
+        writer.writerow(['=== EXPENSES ==='])
+        if expenses:
+            writer.writerow(['Expense ID', 'Amount', 'Category', 'Description', 'Type', 'Date', 'Created At'])
+            for expense in expenses:
+                writer.writerow([
+                    expense.id,
+                    expense.amount,
+                    expense.category,
+                    expense.description or '',
+                    expense.expense_type,
+                    expense.date.strftime('%Y-%m-%d'),
+                    expense.created_at.strftime('%Y-%m-%d %H:%M:%S')
+                ])
+        else:
+            writer.writerow(['No expenses found'])
+        
+        # Create response
+        output.seek(0)
+        response = make_response(output.getvalue())
+        response.headers['Content-Type'] = 'text/csv'
+        response.headers['Content-Disposition'] = f'attachment; filename=my_data_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+        
+        return response
+        
+    except Exception as e:
+        flash(f'Export failed: {str(e)}')
+        return redirect(url_for('settings'))
+
+@app.route('/export_user_data_json')
+@login_required
+def export_user_data_json():
+    """Export current user's data to JSON format"""
+    import json
+    from flask import make_response
+    
+    try:
+        # Get user's expenses and savings goals
+        expenses = Expense.query.filter_by(user_id=current_user.id).order_by(Expense.date.desc()).all()
+        savings_goals = SavingsGoal.query.filter_by(user_id=current_user.id).all()
+        
+        # Prepare data structure
+        data = {
+            'export_info': {
+                'exported_at': datetime.now().isoformat(),
+                'export_version': '1.0',
+                'app_name': 'Expense Manager'
+            },
+            'user_info': {
+                'id': current_user.id,
+                'username': current_user.username,
+                'email': current_user.email,
+                'monthly_income': float(current_user.monthly_income),
+                'is_admin': current_user.is_admin,
+                'member_since': current_user.created_at.isoformat()
+            },
+            'savings_goals': [
+                {
+                    'id': goal.id,
+                    'target_amount': float(goal.target_amount),
+                    'target_months': goal.target_months,
+                    'created_at': goal.created_at.isoformat()
+                }
+                for goal in savings_goals
+            ],
+            'expenses': [
+                {
+                    'id': expense.id,
+                    'amount': float(expense.amount),
+                    'category': expense.category,
+                    'description': expense.description,
+                    'expense_type': expense.expense_type,
+                    'date': expense.date.isoformat(),
+                    'created_at': expense.created_at.isoformat()
+                }
+                for expense in expenses
+            ],
+            'summary': {
+                'total_expenses': len(expenses),
+                'total_amount': sum(float(expense.amount) for expense in expenses),
+                'total_savings_goals': len(savings_goals),
+                'categories': list(set(expense.category for expense in expenses)) if expenses else [],
+                'date_range': {
+                    'earliest': min(expense.date.isoformat() for expense in expenses) if expenses else None,
+                    'latest': max(expense.date.isoformat() for expense in expenses) if expenses else None
+                }
+            }
+        }
+        
+        # Create JSON response
+        json_data = json.dumps(data, indent=2, ensure_ascii=False)
+        response = make_response(json_data)
+        response.headers['Content-Type'] = 'application/json'
+        response.headers['Content-Disposition'] = f'attachment; filename=my_data_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
+        
+        return response
+        
+    except Exception as e:
+        flash(f'Export failed: {str(e)}')
+        return redirect(url_for('settings'))
+
+@app.route('/clear_user_data', methods=['POST'])
+@login_required
+def clear_user_data():
+    """Clear all user's expense data"""
+    try:
+        # Delete user's expenses
+        Expense.query.filter_by(user_id=current_user.id).delete()
+        
+        # Delete user's savings goals
+        SavingsGoal.query.filter_by(user_id=current_user.id).delete()
+        
+        db.session.commit()
+        
+        flash('All your data has been successfully deleted.', 'success')
+        return redirect(url_for('dashboard'))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Failed to clear data: {str(e)}', 'error')
+        return redirect(url_for('settings'))
+>>>>>>> 4744b3b (adding export fuctionlity and android intalling issue fix)
 
 if __name__ == '__main__':
     with app.app_context():

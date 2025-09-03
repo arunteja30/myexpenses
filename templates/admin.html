@@ -67,28 +67,59 @@
 
     <!-- Quick Actions -->
     <div class="row g-3 mb-4">
+<<<<<<< HEAD
         <div class="col-md-3">
+=======
+        <div class="col-md-2">
+>>>>>>> 4744b3b (adding export fuctionlity and android intalling issue fix)
             <a href="{{ url_for('add_user') }}" class="quick-action-card text-decoration-none">
                 <i class="bi bi-person-plus"></i>
                 <span>Add User</span>
             </a>
         </div>
+<<<<<<< HEAD
         <div class="col-md-3">
+=======
+        <div class="col-md-2">
+>>>>>>> 4744b3b (adding export fuctionlity and android intalling issue fix)
             <a href="{{ url_for('expenses') }}" class="quick-action-card text-decoration-none">
                 <i class="bi bi-list-ul"></i>
                 <span>All Expenses</span>
             </a>
         </div>
+<<<<<<< HEAD
         <div class="col-md-3">
+=======
+        <div class="col-md-2">
+>>>>>>> 4744b3b (adding export fuctionlity and android intalling issue fix)
             <a href="{{ url_for('reports') }}" class="quick-action-card text-decoration-none">
                 <i class="bi bi-bar-chart"></i>
                 <span>System Reports</span>
             </a>
         </div>
+<<<<<<< HEAD
         <div class="col-md-3">
             <div class="quick-action-card" onclick="exportSystemData()">
                 <i class="bi bi-download"></i>
                 <span>Export Data</span>
+=======
+        <div class="col-md-2">
+            <a href="{{ url_for('export_data') }}" class="quick-action-card text-decoration-none">
+                <i class="bi bi-download"></i>
+                <span>Export Data</span>
+            </a>
+        </div>
+        <div class="col-md-2">
+            <div class="quick-action-card" onclick="showImportModal()">
+                <i class="bi bi-upload"></i>
+                <span>Import Data</span>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="quick-action-card" onclick="downloadSampleCSV()">
+                <i class="bi bi-file-earmark-text"></i>
+                <span>Sample CSV</span>
+>>>>>>> 4744b3b (adding export fuctionlity and android intalling issue fix)
             </div>
         </div>
     </div>
@@ -197,6 +228,55 @@
     </div>
 </div>
 
+<<<<<<< HEAD
+=======
+<!-- Import Data Modal -->
+<div class="modal fade" id="importDataModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-upload text-primary me-2"></i>Import System Data
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('import_data') }}" method="POST" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Import Instructions:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Upload a CSV file with user and expense data</li>
+                            <li>New users will be created with default password: <code>password123</code></li>
+                            <li>Existing users (by username) will have expenses added</li>
+                            <li>Download sample CSV format using the "Sample CSV" button</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="csvFile" class="form-label">Select CSV File</label>
+                        <input type="file" class="form-control" id="csvFile" name="file" accept=".csv" required>
+                    </div>
+                    
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="confirmImport" required>
+                        <label class="form-check-label" for="confirmImport">
+                            I understand this will add new users and expenses to the system
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-upload me-1"></i>Import Data
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+>>>>>>> 4744b3b (adding export fuctionlity and android intalling issue fix)
 <!-- Delete User Confirmation Modal -->
 <div class="modal fade" id="deleteUserModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
@@ -276,6 +356,7 @@ function confirmDeleteUser(userId, username) {
     modal.show();
 }
 
+<<<<<<< HEAD
 // Delete user (placeholder)
 function deleteUser(userId) {
     showNotification('Delete user feature coming soon!', 'info');
@@ -285,6 +366,99 @@ function deleteUser(userId) {
 // Export system data
 function exportSystemData() {
     showNotification('System data export feature coming soon!', 'info');
+=======
+// Delete user (now functional)
+function deleteUser(userId) {
+    const deleteBtn = document.getElementById('confirmDeleteUserBtn');
+    deleteBtn.disabled = true;
+    deleteBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Deleting...';
+    
+    fetch(`/admin/delete_user/${userId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            // Reload page to update user list
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showNotification(data.error || 'Delete failed', 'error');
+        }
+    })
+    .catch(error => {
+        showNotification('Delete failed: ' + error.message, 'error');
+    })
+    .finally(() => {
+        bootstrap.Modal.getInstance(document.getElementById('deleteUserModal')).hide();
+        deleteBtn.disabled = false;
+        deleteBtn.innerHTML = 'Delete User';
+    });
+}
+
+// Show import modal
+function showImportModal() {
+    const modal = new bootstrap.Modal(document.getElementById('importDataModal'));
+    modal.show();
+}
+
+// Download sample CSV
+function downloadSampleCSV() {
+    const csvContent = `Username,Email,Monthly Income,Is Admin,Expense ID,Amount,Category,Description,Expense Type,Date,Created At
+john_doe,john@example.com,50000,False,1,250.50,Food,Lunch at restaurant,wanted,2024-01-15,2024-01-15 12:00:00
+jane_smith,jane@example.com,75000,False,2,1200.00,Bills,Electricity bill,wanted,2024-01-10,2024-01-10 14:30:00
+admin_user,admin@example.com,100000,True,3,500.00,Entertainment,Movie tickets,unwanted,2024-01-20,2024-01-20 18:00:00
+mike_wilson,mike@example.com,60000,False,4,300.00,Transportation,Fuel,wanted,2024-01-25,2024-01-25 08:00:00
+sarah_jones,sarah@example.com,80000,False,5,150.00,Food,Coffee and snacks,unwanted,2024-01-22,2024-01-22 16:30:00`;
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'sample_expense_data.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
+    showNotification('Sample CSV downloaded', 'success');
+}
+
+// Export system data (removed since it's now a direct link)
+function exportSystemData() {
+    showNotification('Redirecting to export...', 'info');
+    window.location.href = '/admin/export_data';
+}
+
+// Show notification function
+function showNotification(message, type = 'info') {
+    const alertClass = {
+        'success': 'alert-success',
+        'error': 'alert-danger',
+        'warning': 'alert-warning',
+        'info': 'alert-info'
+    }[type] || 'alert-info';
+    
+    const notification = document.createElement('div');
+    notification.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
+>>>>>>> 4744b3b (adding export fuctionlity and android intalling issue fix)
 }
 
 // Load system chart
