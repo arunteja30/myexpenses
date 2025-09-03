@@ -197,9 +197,6 @@
                     </h6>
                 </div>
                 <div class="card-body">
-<<<<<<< HEAD
-                    <p class="text-muted">Download your expense data for backup or analysis.</p>
-=======
                     <p class="text-muted">Download your complete expense data for backup or analysis.</p>
                     
                     <div class="row g-3 mb-3">
@@ -229,7 +226,6 @@
                         </div>
                     </div>
                     
->>>>>>> 4744b3b (adding export fuctionlity and android intalling issue fix)
                     <div class="d-grid gap-2 d-md-flex">
                         <button class="btn btn-outline-primary" onclick="exportToCSV()">
                             <i class="bi bi-file-earmark-spreadsheet me-2"></i>Export to CSV
@@ -312,15 +308,6 @@ function checkInstallStatus() {
 
 // Export functions
 function exportToCSV() {
-<<<<<<< HEAD
-    // This would make a request to a backend endpoint to generate CSV
-    showNotification('CSV export feature coming soon!', 'info');
-}
-
-function exportToJSON() {
-    // This would make a request to a backend endpoint to generate JSON
-    showNotification('JSON export feature coming soon!', 'info');
-=======
     showNotification('Preparing CSV export...', 'info');
     window.location.href = '/export_user_data_csv';
     
@@ -366,7 +353,6 @@ function showNotification(message, type = 'info') {
             notification.remove();
         }
     }, 4000);
->>>>>>> 4744b3b (adding export fuctionlity and android intalling issue fix)
 }
 
 // Clear data confirmation
@@ -381,12 +367,6 @@ document.getElementById('confirmInput').addEventListener('input', function() {
     deleteBtn.disabled = this.value !== 'DELETE';
 });
 
-<<<<<<< HEAD
-// Load account statistics
-function loadStats() {
-    // This would make API calls to get user statistics
-    // For now, using placeholder data
-=======
 // Handle data clearing
 document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
     this.disabled = true;
@@ -417,7 +397,6 @@ document.getElementById('confirmDeleteBtn').addEventListener('click', function()
 
 // Load account statistics
 function loadStats() {
->>>>>>> 4744b3b (adding export fuctionlity and android intalling issue fix)
     const memberSince = new Date('{{ current_user.created_at }}').toLocaleDateString('en-US', {
         month: 'short',
         year: 'numeric'
@@ -425,14 +404,6 @@ function loadStats() {
     
     document.getElementById('member-since').textContent = memberSince;
     
-<<<<<<< HEAD
-    // You would implement actual API calls here
-    // fetch('/api/user_stats').then(response => response.json()).then(data => {
-    //     document.getElementById('total-expenses').textContent = formatCurrency(data.total_expenses);
-    //     document.getElementById('avg-monthly').textContent = formatCurrency(data.avg_monthly);
-    //     document.getElementById('expense-count').textContent = data.expense_count;
-    // });
-=======
     // Load actual expense statistics
     fetch('/api/user_expenses/{{ current_user.id }}')
         .then(response => response.json())
@@ -453,7 +424,6 @@ function loadStats() {
             document.getElementById('avg-monthly').textContent = '₹0';
             document.getElementById('expense-count').textContent = '0';
         });
->>>>>>> 4744b3b (adding export fuctionlity and android intalling issue fix)
 }
 
 // Initialize

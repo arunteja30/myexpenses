@@ -1,10 +1,7 @@
 // Progressive Web App functionality
-<<<<<<< HEAD
-=======
 let deferredPrompt;
 
 // Service Worker Registration
->>>>>>> 4744b3b (adding export fuctionlity and android intalling issue fix)
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
         navigator.serviceWorker.register('/static/sw.js')
@@ -17,8 +14,6 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-<<<<<<< HEAD
-=======
 // PWA Install Prompt
 window.addEventListener('beforeinstallprompt', (e) => {
     console.log('PWA install prompt triggered');
@@ -87,8 +82,6 @@ window.addEventListener('appinstalled', (evt) => {
     const banner = document.getElementById('install-banner');
     if (banner) banner.remove();
 });
-
->>>>>>> 4744b3b (adding export fuctionlity and android intalling issue fix)
 // Theme Management
 function initTheme() {
     const savedTheme = localStorage.getItem('theme') || 'light';
@@ -126,12 +119,7 @@ function toggleTheme() {
     }
 }
 
-<<<<<<< HEAD
-// Install PWA prompt
-let deferredPrompt;
-=======
 // Install PWA prompt - using existing deferredPrompt variable
->>>>>>> 4744b3b (adding export fuctionlity and android intalling issue fix)
 window.addEventListener('beforeinstallprompt', (e) => {
     // Prevent Chrome 67 and earlier from automatically showing the prompt
     e.preventDefault();

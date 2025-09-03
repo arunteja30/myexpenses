@@ -519,59 +519,6 @@ def user_expenses(user_id):
     
     return jsonify({'total_expenses': total_expenses})
 
-<<<<<<< HEAD
-@app.route('/add_sample_data')
-@login_required
-def add_sample_data():
-    """Add sample data for testing (only for demo purposes)"""
-    from datetime import datetime, timedelta
-    import random
-    
-    # Only allow if user has no expenses yet
-    existing_expenses = Expense.query.filter_by(user_id=current_user.id).count()
-    if existing_expenses > 0:
-        flash('Sample data already exists or you have expenses.')
-        return redirect(url_for('dashboard'))
-    
-    categories = ['Food', 'Transportation', 'Entertainment', 'Shopping', 'Bills', 'Healthcare']
-    descriptions = {
-        'Food': ['Lunch', 'Dinner', 'Groceries', 'Coffee', 'Snacks'],
-        'Transportation': ['Bus fare', 'Auto', 'Fuel', 'Parking', 'Taxi'],
-        'Entertainment': ['Movie', 'Concert', 'Games', 'Books', 'Streaming'],
-        'Shopping': ['Clothes', 'Electronics', 'Groceries', 'Gifts', 'Household'],
-        'Bills': ['Electricity', 'Water', 'Internet', 'Phone', 'Rent'],
-        'Healthcare': ['Medicine', 'Doctor visit', 'Checkup', 'Dental', 'Pharmacy']
-    }
-    
-    # Create sample expenses for the last 3 months
-    base_date = datetime.now()
-    sample_expenses = []
-    
-    for i in range(30):  # 30 sample expenses
-        days_back = random.randint(0, 90)  # Last 3 months
-        expense_date = base_date - timedelta(days=days_back)
-        
-        category = random.choice(categories)
-        description = random.choice(descriptions[category])
-        amount = random.uniform(50, 500)
-        expense_type = 'unwanted' if random.random() < 0.3 else 'wanted'  # 30% unwanted
-        
-        expense = Expense(
-            user_id=current_user.id,
-            amount=round(amount, 2),
-            category=category,
-            description=description,
-            expense_type=expense_type,
-            date=expense_date
-        )
-        sample_expenses.append(expense)
-    
-    db.session.add_all(sample_expenses)
-    db.session.commit()
-    
-    flash('Sample data added successfully! You can now see charts and analytics.')
-    return redirect(url_for('dashboard'))
-=======
 @app.route('/admin/export_data')
 @login_required
 def export_data():
@@ -1083,7 +1030,6 @@ def clear_user_data():
         db.session.rollback()
         flash(f'Failed to clear data: {str(e)}', 'error')
         return redirect(url_for('settings'))
->>>>>>> 4744b3b (adding export fuctionlity and android intalling issue fix)
 
 if __name__ == '__main__':
     with app.app_context():
