@@ -86,7 +86,7 @@
             </a>
         </div>
         <div class="col-md-2">
-            <a href="{{ url_for('export_data') }}" class="quick-action-card text-decoration-none">
+            <a href="{{ url_for('export_user_data_csv') }}" class="quick-action-card text-decoration-none">
                 <i class="bi bi-download"></i>
                 <span>Export Data</span>
             </a>
@@ -149,19 +149,19 @@
                                     <td>{{ user.email }}</td>
                                     <td>₹{{ "{:,.0f}".format(user.monthly_income) }}</td>
                                     <td id="user-expenses-{{ user.id }}">Loading...</td>
-                                    <td>{{ user.created_at.strftime('%d %b %Y') }}</td>
+                                    <td>{{ user.created_at | date_display }}</td>
                                     <td>
                                         <div class="btn-group btn-group-sm">
-                                            <button class="btn btn-outline-primary" onclick="viewUserDetails({{ user.id }})">
+                                            <button class="btn btn-outline-primary" onclick="viewUserDetails('{{ user.id }}')">
                                                 <i class="bi bi-eye"></i>
                                             </button>
                                             {% if not user.is_admin or user.id == current_user.id %}
-                                            <button class="btn btn-outline-secondary" onclick="editUser({{ user.id }})">
+                                            <button class="btn btn-outline-secondary" onclick="editUser('{{ user.id }}')">
                                                 <i class="bi bi-pencil"></i>
                                             </button>
                                             {% endif %}
                                             {% if user.id != current_user.id %}
-                                            <button class="btn btn-outline-danger" onclick="confirmDeleteUser({{ user.id }}, '{{ user.username }}')">
+                                            <button class="btn btn-outline-danger" onclick="confirmDeleteUser('{{ user.id }}', '{{ user.username }}')">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                             {% endif %}
@@ -219,7 +219,7 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="{{ url_for('import_data') }}" method="POST" enctype="multipart/form-data">
+            <form onsubmit="alert('Import functionality is not yet implemented'); return false;")
                 <div class="modal-body">
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle me-2"></i>
@@ -274,6 +274,59 @@
         </div>
     </div>
 </div>
+
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-pencil text-primary me-2"></i>Edit User
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form onsubmit="saveUserChanges(); return false;">
+                <div class="modal-body">
+                    <input type="hidden" id="editUserId">
+                    
+                    <div class="mb-3">
+                        <label for="editUsername" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="editUsername" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="editEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="editEmail" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="editMonthlyIncome" class="form-label">Monthly Income</label>
+                        <input type="number" class="form-control" id="editMonthlyIncome" step="0.01" min="0" required>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="editIsAdmin">
+                        <label class="form-check-label" for="editIsAdmin">
+                            Admin User
+                        </label>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mb-3">
+                        <button type="button" class="btn btn-warning" onclick="resetPassword()">
+                            <i class="bi bi-key me-1"></i>Reset Password
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="saveUserBtn">
+                        <i class="bi bi-check me-1"></i>Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -320,9 +373,100 @@ function viewUserDetails(userId) {
     }, 1000);
 }
 
-// Edit user (placeholder)
+// Edit user
 function editUser(userId) {
-    showNotification('Edit user feature coming soon!', 'info');
+    // Fetch user data
+    fetch(`/admin/edit_user/${userId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showNotification(data.error, 'error');
+                return;
+            }
+            
+            // Populate form
+            document.getElementById('editUserId').value = data.id;
+            document.getElementById('editUsername').value = data.username;
+            document.getElementById('editEmail').value = data.email;
+            document.getElementById('editMonthlyIncome').value = data.monthly_income;
+            document.getElementById('editIsAdmin').checked = data.is_admin;
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('editUserModal'));
+            modal.show();
+        })
+        .catch(error => {
+            showNotification('Error loading user data', 'error');
+        });
+}
+
+// Save user changes
+function saveUserChanges() {
+    const userId = document.getElementById('editUserId').value;
+    const saveBtn = document.getElementById('saveUserBtn');
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
+    
+    const data = {
+        username: document.getElementById('editUsername').value,
+        email: document.getElementById('editEmail').value,
+        monthly_income: parseFloat(document.getElementById('editMonthlyIncome').value),
+        is_admin: document.getElementById('editIsAdmin').checked
+    };
+    
+    fetch(`/admin/edit_user/${userId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            bootstrap.Modal.getInstance(document.getElementById('editUserModal')).hide();
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showNotification(data.error || 'Error updating user', 'error');
+        }
+    })
+    .catch(error => {
+        showNotification('Error updating user', 'error');
+    })
+    .finally(() => {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<i class="bi bi-check me-1"></i>Save Changes';
+    });
+}
+
+// Reset password
+function resetPassword() {
+    const userId = document.getElementById('editUserId').value;
+    const newPassword = prompt('Enter new password (leave empty for default "password123"):') || 'password123';
+    
+    if (!confirm(`Reset password to "${newPassword}"?`)) {
+        return;
+    }
+    
+    fetch(`/admin/reset_password/${userId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password: newPassword })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+        } else {
+            showNotification(data.error || 'Error resetting password', 'error');
+        }
+    })
+    .catch(error => {
+        showNotification('Error resetting password', 'error');
+    });
 }
 
 // Confirm delete user

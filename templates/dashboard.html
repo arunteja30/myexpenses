@@ -163,7 +163,7 @@
                                     <div>
                                         <h6 class="mb-1">{{ expense.description or expense.category }}</h6>
                                         <small class="text-muted">
-                                            {{ expense.date.strftime('%d %b %Y') }} • {{ expense.category }}
+                                            {{ expense.date | date_display }} • {{ expense.category }}
                                             {% if current_user.is_admin and expense.user.username != current_user.username %}
                                             • {{ expense.user.username }}
                                             {% endif %}

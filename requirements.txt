@@ -1,10 +1,11 @@
 --index-url https://pypi.org/simple
 
 Flask==2.3.3
-Flask-SQLAlchemy==3.0.5
 Flask-Login==0.6.3
 Flask-WTF==1.1.1
 WTForms==3.0.1
 Werkzeug==2.3.7
 python-dateutil==2.8.2
 gunicorn==21.2.0
+firebase-admin==6.2.0
+requests==2.31.0

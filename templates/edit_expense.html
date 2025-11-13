@@ -66,7 +66,7 @@
                         <div class="mb-4">
                             <label for="date" class="form-label">Date</label>
                             <input type="date" class="form-control form-control-lg" id="date" 
-                                   name="date" value="{{ expense.date.strftime('%Y-%m-%d') }}">
+                                   name="date" value="{{ expense.date | date_input }}">
                         </div>
 
                         <div class="d-grid gap-2">
@@ -88,7 +88,7 @@
                     <div class="row">
                         <div class="col-6">
                             <small class="text-muted">Created:</small><br>
-                            <strong>{{ expense.created_at.strftime('%d %b %Y at %I:%M %p') }}</strong>
+                            <strong>{{ expense.created_at | datetime_display }}</strong>
                         </div>
                         <div class="col-6">
                             <small class="text-muted">By:</small><br>
